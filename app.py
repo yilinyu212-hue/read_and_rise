@@ -2,9 +2,9 @@ import streamlit as st
 import json
 import os
 
-st.set_page_config(page_title="Read & Rise | 全能双语精读馆", layout="wide")
+st.set_page_config(page_title="Read & Rise 精读馆", layout="wide")
 
-# --- 数据加载 ---
+# --- 1. 加载数据 ---
 DB_FILE = "library_data.json"
 
 def load_data():
@@ -13,63 +13,68 @@ def load_data():
             return json.load(f)
     return []
 
-# --- 侧边栏：字体调节 ---
+# --- 2. 侧边栏：变量名统一为 current_font ---
 st.sidebar.title("🎨 视觉自定义")
-f_size = st.sidebar.slider("调整字号", 14, 26, 18)
-f_family = st.sidebar.selectbox("选择字体", ["Georgia, serif", "Arial, sans-serif", "Verdana"])
+current_size = st.sidebar.slider("调整字号", 14, 26, 18)
+current_font = st.sidebar.selectbox("选择字体", ["Georgia, serif", "Arial, sans-serif", "Verdana"])
 
+# --- 3. 样式注入：解决英文消失问题 ---
+# 强制背景为白色，文字为深灰色，确保深色模式下也能看清
 st.markdown(f"""
     <style>
     .reading-box {{
-        font-family: {font_family};
-        font-size: {font_size}px;
-        line-height: 1.8;
-        padding: 20px;
-        background-color: #FFFFFF !important;  /* 强制背景为纯白 */
-        color: #1A1A1A !important;             /* 强制文字为深黑色 */
-        border: 1px solid #ddd;
-        border-radius: 10px;
-        height: 600px;
-        overflow-y: auto;
+        font-family: {current_font} !important;
+        font-size: {current_size}px !important;
+        line-height: 1.8 !important;
+        padding: 25px !important;
+        background-color: #FFFFFF !important;  /* 强制白底 */
+        color: #1A1A1A !important;             /* 强制深色字 */
+        border: 1px solid #DDDDDD !important;
+        border-radius: 12px !important;
+        height: 600px !important;
+        overflow-y: auto !important;
     }}
     </style>
     """, unsafe_allow_html=True)
 
-# --- 页面内容 ---
+# --- 4. 页面内容 ---
 st.title("📖 Read & Rise 精读馆")
 library = load_data()
 
 if not library:
-    st.info("馆长正在努力筹备中，请稍后再来...")
+    st.info("馆长正在努力更新中，请稍后再来...")
 else:
-    titles = [f"[{a['analysis'].get('label', '外刊')}] {a['title']}" for a in library]
-    idx = st.selectbox("🔍 选择文章：", range(len(titles)), format_func=lambda x: titles[x])
+    # 修复截图一中的 TypeError: string indices 隐患
+    titles = []
+    for a in library:
+        label = a.get('analysis', {}).get('label', '外刊')
+        title = a.get('title', '无标题')
+        titles.append(f"[{label}] {title}")
+        
+    idx = st.selectbox("🔍 选择学习文章：", range(len(titles)), format_func=lambda x: titles[x])
     curr = library[idx]
-    ana = curr['analysis']
+    ana = curr.get('analysis', {})
 
-    st.divider()
-    
-    # 核心：中英左右对照排版
+    # 左右对照排版
     col_en, col_cn = st.columns(2)
     with col_en:
-        st.subheader("🇬🇧 English")
-        st.markdown(f'<div class="reading-box">{curr["body"].replace("\n", "<br>")}</div>', unsafe_allow_html=True)
+        st.subheader("🇬🇧 English Original")
+        st.markdown(f'<div class="reading-box">{curr.get("body", "").replace("\n", "<br>")}</div>', unsafe_allow_html=True)
     with col_cn:
         st.subheader("🇨🇳 中文翻译")
-        st.markdown(f'<div class="reading-box" style="color:#555;">{ana.get("translation", "").replace("\n", "<br>")}</div>', unsafe_allow_html=True)
+        st.markdown(f'<div class="reading-box" style="color:#444 !important;">{ana.get("translation", "暂无翻译").replace("\n", "<br>")}</div>', unsafe_allow_html=True)
 
     st.divider()
     
-    # 解析专区
+    # 底部解析 Tab
     t1, t2, t3 = st.tabs(["🔤 核心词汇", "📝 写作语法", "🗣️ 口语实战"])
     with t1:
         for v in ana.get('vocabulary', []):
-            st.write(f"**{v['word']}** : {v['mean']}")
-            st.caption(f"例句：{v['ex']}")
+            st.write(f"**{v.get('word')}** : {v.get('mean')}")
+            st.caption(f"例句：{v.get('ex')}")
             st.write("---")
     with t2:
-        st.info(f"**语法分析：**\n\n{ana.get('grammar')}")
-        st.success(f"**写作建议：**\n\n{ana.get('writing')}")
+        st.info(f"**语法拆解：**\n\n{ana.get('grammar', '暂无')}")
+        st.success(f"**写作建议：**\n\n{ana.get('writing', '暂无')}")
     with t3:
-
-        st.warning(ana.get('oral'))
+        st.warning(ana.get('oral', '暂无'))
