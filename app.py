@@ -21,12 +21,13 @@ f_family = st.sidebar.selectbox("选择字体", ["Georgia, serif", "Arial, sans-
 st.markdown(f"""
     <style>
     .reading-box {{
-        font-family: {f_family};
-        font-size: {f_size}px;
+        font-family: {font_family};
+        font-size: {font_size}px;
         line-height: 1.8;
         padding: 20px;
-        background-color: #fcfcfc;
-        border: 1px solid #eee;
+        background-color: #FFFFFF !important;  /* 强制背景为纯白 */
+        color: #1A1A1A !important;             /* 强制文字为深黑色 */
+        border: 1px solid #ddd;
         border-radius: 10px;
         height: 600px;
         overflow-y: auto;
@@ -70,4 +71,5 @@ else:
         st.info(f"**语法分析：**\n\n{ana.get('grammar')}")
         st.success(f"**写作建议：**\n\n{ana.get('writing')}")
     with t3:
+
         st.warning(ana.get('oral'))
